@@ -7,7 +7,6 @@ from polyp.ReefOps import Site
 import calendar
 import datetime
 import plotly.express as px
-from streamlit_folium import st_folium
 import os.path as path
 
 
