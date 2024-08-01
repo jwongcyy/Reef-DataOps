@@ -35,9 +35,9 @@ class Storage:
 
     def write_file(self, binary_data, output_path, html=False):
         if html:
-            self.s3_client.put_object(Body=binary_data, ContentType='text/html', Bucket=self.name, Key=output_path)
+            return self.s3_client.put_object(Body=binary_data, ContentType='text/html', Bucket=self.name, Key=output_path)
         else:
-            self.s3_client.put_object(Body=binary_data, Bucket=self.name, Key=output_path)
+            return self.s3_client.put_object(Body=binary_data, Bucket=self.name, Key=output_path)
 
     # def write_html_file(self, html_data, output_path):
     #     self.s3_client.put_object(Body=html_data, ContentType='text/html', Bucket=self.name, Key=output_path)
