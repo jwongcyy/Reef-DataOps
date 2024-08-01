@@ -66,7 +66,7 @@ address = col1.text_input(label="Company Address")
 contact_name = col1.text_input(label="Contact Name")
 contact_no = col1.text_input(label="Contact Number")
 
-# Columnt 2 Content
+# Column 2 Content
 country = col2.selectbox(label="Country", options=countries.name.to_list())
 city = col2.text_input(label="City")
 contact_department = col2.text_input(label="Contact Department")
