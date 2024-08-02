@@ -40,19 +40,25 @@ def post_data():
         contact_department=contact_department,
         onboarded=onboarded
     )
+    record_added = False
     clients_num = clients_df.shape[0]
     # update the new client record id
     client_id = clients_df.iloc[-1]['client_id'] + 1
     clients_df = clients_df._append(client_record, ignore_index=True)
     clients_df.loc[clients_df.index[-1], 'client_id'] = client_id
     clients_df['client_id'] = clients_df['client_id'].astype('int')
-    csv_buffer = io.StringIO()
-    clients_df.to_csv(csv_buffer, index=False)
-    post_result = s3_storage.write_file(binary_data=csv_buffer.getvalue(), output_path='database/reef_ops/clients.csv')
-    if post_result['ResponseMetadata']['HTTPStatusCode'] == 200 and clients_df.shape[0] > clients_num:
-        output.success("New Client Added Successfully!")
-        output.info("Number of Clients: " + str(clients_df.shape[0]))
-        output.write(client_record)
+    if clients_df.shape[0] > clients_num:
+        record_added = True
+    if record_added:
+        csv_buffer = io.StringIO()
+        clients_df.to_csv(csv_buffer, index=False)
+        post_result = s3_storage.write_file(binary_data=csv_buffer.getvalue(), output_path='database/reef_ops/clients.csv')
+        if post_result['ResponseMetadata']['HTTPStatusCode'] == 200:
+            output.success("New Client Added Successfully!")
+            output.info("Number of Clients: " + str(clients_df.shape[0]))
+            output.write(client_record)
+        else:
+            output.error("Sorry Something Went Wrong, Please Try Again!")
     else:
         output.error("Sorry Something Went Wrong, Please Try Again!")
 
