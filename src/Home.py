@@ -12,6 +12,11 @@ from ReefOps import Site
 import plotly.express as px
 from streamlit_folium import st_folium
 import os.path as path
+import folium
+
+
+from streamlit_folium import st_folium
+
 
 
 root =  path.abspath(path.join(__file__ ,"../.."))
@@ -22,12 +27,13 @@ clients=pd.read_csv(f'{root}/data/reefops/clients.csv')
 client_names=clients.name
 
 sites=pd.read_csv(f'{root}/data/reefops/sites.csv')
+site_names=sites.site_name
 surveys=pd.read_csv(f'{root}/data/reefops/surveys.csv')
 rsfm_data=pd.read_csv(f'{root}/data/reefsfm/reefsfm_db_coral_metrics.csv')
 
 
 
-st.set_page_config(page_title="ReefOps Tool", layout="wide",page_icon=":tropical_fish:")
+st.set_page_config(page_title="Home - Reef DataOps", layout="wide",page_icon=":tropical_fish:")
 
 def readable_date(date):
     return f"{date.day} {calendar.month_abbr[date.month]}, {date.year}"
@@ -44,20 +50,20 @@ def format_bool(bool):
    else:
        return ":x:"
 
-regions=["United Arab Emirates", "Hong Kong"]
-
+regions=["United Arab Emirates", "Hong Kong", "Saudi Arabia"]
 
 
 
 # Add a selectbox to the sidebar:
-client_selection = st.sidebar.selectbox(
-      'Select Client',
-      client_names
+site_selection = st.sidebar.selectbox(
+      'Select Site',
+      site_names
    )
 
 
-selected_client=clients[clients.name==client_selection].iloc[0]
-selected_site=sites[sites.client_code == selected_client.client_code].iloc[0]
+
+selected_site=sites[sites.site_name == site_selection].iloc[0]
+selected_client=clients[clients.client_code==selected_site.client_code].iloc[0]
 
 
 site=Site(selected_site.site_id)
@@ -65,56 +71,88 @@ selected_survey=site.surveys.survey_df
 selected_survey["start_dt"]=pd.to_datetime(selected_survey.start_date,format=DATE_STR_FORMAT)
 selected_survey["end_dt"]=pd.to_datetime(selected_survey.end_date,format=DATE_STR_FORMAT)
 
-st.header(f"{selected_client['name']}")
+
+head1,head2=st.columns([1,2])
+head1.header(f"{selected_site.site_name}")
+head1.markdown(f"**Site ID:** {site.site_id}")
+# Column 3 content
+head2.write("")
+
+with st.popover("Show Location 🌍"):
+    map_data = pd.DataFrame(dict(lat= [site.site_df.latitude],lon = [site.site_df.longitude], size=20))
+    # center on Liberty Bell, add marker
+    m = folium.Map(location=[site.site_df.latitude, site.site_df.longitude], zoom_start=3,tiles=None)
+    folium.CircleMarker(
+    location=[site.site_df.latitude,site.site_df.longitude],
+    radius=10,
+    color="red",
+    stroke=False,
+    fill=True,
+    fill_opacity=1,
+    opacity=1,
+    # popup="{} pixels".format(radius),
+    tooltip=selected_site.site_name,
+    ).add_to(m)
+
+    tile = folium.TileLayer(
+        tiles = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        attr = 'Esri',
+        name = 'Esri Satellite',
+        overlay = False,
+        control = True
+       ).add_to(m)
+    # call to render Folium map in Streamlit
+    st_data = st_folium(m,width=310, height= 300)
+    # st.map(map_data, use_container_width =True, zoom=1)
+
+
 st.divider()
 
-cl_col1,cl_col2,cl_col3 = st.columns([1,1,3])
-cl_col1.subheader("Address")
 
-address=selected_client.address.split(",")
-for ad in address:
-   cl_col1.write(ad)
-
-cl_col2.subheader("Primary Contact")
-cl_col2.write(selected_client.contact_name)
-cl_col2.write(selected_client.contact_department)
-cl_col2.write(selected_client.primary_mobile_no)
-cl_col2.write(selected_client.primary_email)
-#    st.write(selected_client.region)
+col1, col2, col3 = st.columns([1.5,1.5,2])
 
 
 
-st.divider()
-st.header(f"Site: {site.name}")
-st.divider()
-
-col1, col2, col3 = st.columns([1,1,3])
-
-# Column 1 content
-col1.metric(label="Site ID", value=site.site_id)
-
+col1.metric(label="Client" , value=selected_client["name"])
 col1.metric(label="Deployment Type" , value=site.site_df["type"].replace("_", " ").title())
-col1.metric(label="Locality" , value=site.locality)
-col1.metric(label="Country" , value=site.site_df.country)
-col1.metric(label="City" , value=site.site_df.city)
+col1.metric(label="Deployment Start Date" , value=readable_date(site.start_date))
+col1.metric(label="Deployment End Date" , value=readable_date(site.end_date))
+
+
 
 # Column 2 content
+col2.metric(label="Country" , value=site.site_df.country)
+col2.metric(label="City" , value=site.site_df.city)
+col2.metric(label="Locality" , value=site.locality)
 col2.metric(label="Project Manager", value=site.site_df.project_manager)
-col2.metric(label="Deployment Start Date" , value=readable_date(site.start_date))
-col2.metric(label="Deployment End Date" , value=readable_date(site.end_date))
-col2.metric(label="Project Area" , value=f"{int(site.area_m2)} m2")
-col2.metric(label="Quantity" , value=int(site.site_df.quantity))
 
-# Column 3 content
+scol1,scol2=col3.columns([1,1])
+scol1.metric(label="Project Area" , value=f"{int(site.area_m2)} m2")
+scol2.metric(label="Quantity" , value=int(site.site_df.quantity))
+client_details=col3.container(border=True)
+client_details.subheader("Client Contact Info")
 
-map_data = pd.DataFrame(dict(lat= [site.site_df.latitude],lon = [site.site_df.longitude], size=500))
-col3.map(map_data)
+client_details.markdown(f"**{selected_client.contact_name}**")
+
+client_details.markdown(f"{selected_client.contact_department}")
+client_details.write(f"{selected_client.primary_mobile_no} | {selected_client.primary_email}")
+client_details.write(f"{selected_client.address}")
+
+
+
+
+
 
 
 st.divider()
-st.header(f"Survey Information")
+surv1,surv2=st.columns([1,2])
+surv1.write("")
+surv1.write("")
+surv1.write("")
+surv1.header(f"Survey Information")
 st.divider()
-col1, col2 = st.columns(2)
+
+col1, col2 = surv2.columns(2)
 
 completed_surveys=selected_survey[selected_survey.done == True].sort_values("end_dt", ascending = True).reset_index(drop=True)
 upcoming_surveys=selected_survey[selected_survey.done == False].sort_values("start_dt").reset_index(drop=True)
@@ -131,7 +169,6 @@ col1.metric(label=f"Last Survey", value=last_survey_date)
 
 col2.metric(label="Remaining Surveys", value=len(upcoming_surveys))
 col2.metric(label=f"Next Survey", value=next_survey_date)
-st.divider()
 st.subheader(":white_check_mark: Completed Surveys")
 st.write("")
 
@@ -179,7 +216,7 @@ for col, s_content in zip(cols, upcoming_surveys_content):
         cont.write(f"{time_delta.days} remaining days")
 
 st.divider()
-st.header("ReefCheck Data")
+st.header("🐠 ReefCheck Data")
 st.write("")
 
 rc=ReefCheck(site_id=selected_site.site_id)
@@ -187,7 +224,7 @@ st.write(rc.reefcheck_df.drop("site_id", axis =1))
 
 
 st.divider()
-st.header("ReefSFM Data")
+st.header("📈 ReefSFM Data")
 st.write("")
 rs_col1,rs_col2 = st.columns(2)
 rs_col1.subheader("Size Distributions")
