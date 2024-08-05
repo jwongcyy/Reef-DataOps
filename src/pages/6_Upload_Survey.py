@@ -26,8 +26,10 @@ site_ids=sites.site_id
 
 
 depth_list=[round(x,1) for x in np.arange(0,50,0.1)]
+bearing_list=[x for x in range(0,360)]
+gcp_id_list=[f"GCP{str(n).zfill(2)}" for n in range(1, 101)]
 survey_methods=["Reef Check","Photogrammetry", "360 Video", "eDNA", "BRUV","Benthic Transect"]
-rigs=["Hero4 / 2x lights", "Hero11 / 2x 28000 lumen lights","Nikon Z7II / 2x Sea&Sea MKII Strobes", "Stereo Hero12 / 4x 28800 Lumens lights", "Insta360 X3 Basic Setup"]
+cameras=["GoPro Hero 11", "GoPro Hero12", "Olympus TG-6", "Olympus TG-7", "Nikon Z7II", "Nikon D750", "Nikon D7800"]
 survey_data=None
 
 def get_survey_data():
@@ -144,7 +146,7 @@ if dive_count > 0:
         data["max_temp_c"]=dl_col2.number_input(label=f"Max Temp (C) ({labels[i]})", value=0.0)
 
         data["substrate_type"]=dl_col2.text_input(label=f"Substrate Type ({labels[i]})")
-        data["remarks"]=dl_col3.text_area(label=f"Remarks ({labels[i]})")
+        data["remarks"]=dl_col3.text_area(label=f"Remarks ({labels[i]})", height=300)
 
         data["reefcheck"]=dive_container.toggle(f"Reef Check ({labels[i]})")
         data["sfm"]=dive_container.toggle(f"Photogrammetry ({labels[i]})")
@@ -180,27 +182,51 @@ if dive_count > 0:
             sfm_col1.subheader("SFM Survey Metadata")
             data["sfm_diver_1"]=sfm_col1.selectbox(label=f"SFM Diver 1 ({labels[i]})", options=agent_names)
             data["sfm_diver_2"]=sfm_col1.selectbox(label=f"SFM Diver 2 ({labels[i]})", options=agent_names)
-            data["sfm_rig"]=sfm_col1.selectbox(label=f"SFM Rig ({labels[i]})", options=rigs)
             data["sfm_start_time"]=sfm_col1.time_input(label= f"SFM Start Time ({labels[i]})")
             data["sfm_end_time"]=sfm_col1.time_input(label= f"SFM End Time ({labels[i]})")
+            data["sfm_camera"]=sfm_col1.selectbox(label=f"Camera Model ({labels[i]})", options=cameras)
+            data["sfm_stereo"]=sfm_col1.selectbox(label=f"Stereo Rig ({labels[i]})", options=["Yes", "No"])
+            data["sfm_lights"]=sfm_col1.selectbox(label=f"Lights ({labels[i]})", options=["Yes", "No"])
+            
 
             sfm_col2.subheader("GCP Metadata")
+            gcp_count=10
+            data["reference_gcp_id"]= sfm_col2.selectbox(label=f"Reference Marker ID ({labels[i]})", options=gcp_id_list)
+            data["reference_gcp_coords"]= sfm_col2.text_input(label=f"GPS Coordinates of Reference Marker (Lat, Lon) ({labels[i]})")
+    
             gcp_data=dict(
-                gcp_id=["GCP01","GCP02", "GCP03", "GCP04", "GCP05", "GCP06"],
-                depth_m=[0.0,0.0,0.0,0.0,0.0,0.0]
+                gcp_id=gcp_id_list,
+                depth_m=[0.0 for x in range(0,len(gcp_id_list))],
+                bearing=[0 for x in range(0,len(gcp_id_list))],
+                reference=[True if gcp == data["reference_gcp_id"] else False for gcp in gcp_id_list ]
             )
+            
             data["gcp_log"]=sfm_col2.data_editor(
                 gcp_data, 
                 num_rows="dynamic", 
                 key=f"{labels[i]}",
-                width= 500,
+                width= 700,
                 column_config={
                     "depth_m": st.column_config.SelectboxColumn(
                         "Depth (m)",
-                        help="The category of the app",
+                        help="Enter the Depth of the GCP to the 0.1 m level.",
                         width="medium",
                         options=depth_list,
                         required=False,
+                    ),
+                    "bearing": st.column_config.SelectboxColumn(
+                        "Reference Bearing (°)",
+                        help="North Bearing from reference marker to a given GCP.",
+                        width="medium",
+                        options=bearing_list,
+                        required=False,
+                    ),
+                    "reference": st.column_config.CheckboxColumn(
+                        "Is Reference",
+                        help="Marks the Reference Marker.",
+                        width="medium",
+                        # options=bearing_list,
+                        required=True,
                     )}
             )
 
