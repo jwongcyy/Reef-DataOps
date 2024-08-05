@@ -17,8 +17,6 @@ import folium
 
 from streamlit_folium import st_folium
 
-
-
 root =  path.abspath(path.join(__file__ ,"../.."))
 
 # Get Operational data
@@ -78,47 +76,14 @@ head1.markdown(f"**Site ID:** {site.site_id}")
 # Column 3 content
 head2.write("")
 
-with st.popover("Show Location 🌍"):
-    map_data = pd.DataFrame(dict(lat= [site.site_df.latitude],lon = [site.site_df.longitude], size=20))
-    # center on Liberty Bell, add marker
-    m = folium.Map(location=[site.site_df.latitude, site.site_df.longitude], zoom_start=3,tiles=None)
-    folium.CircleMarker(
-    location=[site.site_df.latitude,site.site_df.longitude],
-    radius=10,
-    color="red",
-    stroke=False,
-    fill=True,
-    fill_opacity=1,
-    opacity=1,
-    # popup="{} pixels".format(radius),
-    tooltip=selected_site.site_name,
-    ).add_to(m)
-
-    tile = folium.TileLayer(
-        tiles = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        attr = 'Esri',
-        name = 'Esri Satellite',
-        overlay = False,
-        control = True
-       ).add_to(m)
-    # call to render Folium map in Streamlit
-    st_data = st_folium(m,width=310, height= 300)
-    # st.map(map_data, use_container_width =True, zoom=1)
-
-
+st.markdown(f"**Client Contact Info:** {selected_client.contact_name} | {selected_client.contact_department} | {selected_client.primary_mobile_no} | {selected_client.primary_email} | {selected_client.address}")
 st.divider()
 
-
 col1, col2, col3 = st.columns([1.5,1.5,2])
-
-
-
 col1.metric(label="Client" , value=selected_client["name"])
 col1.metric(label="Deployment Type" , value=site.site_df["type"].replace("_", " ").title())
 col1.metric(label="Deployment Start Date" , value=readable_date(site.start_date))
 col1.metric(label="Deployment End Date" , value=readable_date(site.end_date))
-
-
 
 # Column 2 content
 col2.metric(label="Country" , value=site.site_df.country)
@@ -129,18 +94,34 @@ col2.metric(label="Project Manager", value=site.site_df.project_manager)
 scol1,scol2=col3.columns([1,1])
 scol1.metric(label="Project Area" , value=f"{int(site.area_m2)} m2")
 scol2.metric(label="Quantity" , value=int(site.site_df.quantity))
-client_details=col3.container(border=True)
-client_details.subheader("Client Contact Info")
 
-client_details.markdown(f"**{selected_client.contact_name}**")
+map_view=col3.container()
+map_data = pd.DataFrame(dict(lat= [site.site_df.latitude],lon = [site.site_df.longitude], size=20))
+# center on Liberty Bell, add marker
+m = folium.Map(location=[site.site_df.latitude, site.site_df.longitude], zoom_start=3,tiles=None)
+folium.CircleMarker(
+location=[site.site_df.latitude,site.site_df.longitude],
+radius=10,
+color="red",
+stroke=False,
+fill=True,
+fill_opacity=1,
+opacity=1,
+# popup="{} pixels".format(radius),
+tooltip=selected_site.site_name,
+).add_to(m)
 
-client_details.markdown(f"{selected_client.contact_department}")
-client_details.write(f"{selected_client.primary_mobile_no} | {selected_client.primary_email}")
-client_details.write(f"{selected_client.address}")
+tile = folium.TileLayer(
+    tiles = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attr = 'Esri',
+    name = 'Esri Satellite',
+    overlay = False,
+    control = True
+    ).add_to(m)
+# call to render Folium map in Streamlit
 
-
-
-
+with map_view:
+    st_folium(m,width=550, height= 250)
 
 
 
