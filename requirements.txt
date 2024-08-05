@@ -1,7 +1,1 @@
-pandas
-folium
-plotly
-nbformat
-pytest
 streamlit
-streamlit_folium
