@@ -65,8 +65,8 @@ st.markdown("# Upload Survey Data")
 
 st.divider()
 
-upload=st.button("Upload Survey")
-modify=st.button("Modify Data")
+# upload=st.button("Upload Survey")
+# modify=st.button("Modify Data")
 
 
 if upload:
