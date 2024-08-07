@@ -27,7 +27,7 @@ st.set_page_config(page_title="Create Client", page_icon="🌍")
 st.markdown("# Create New Client")
 st.divider()
 
-
+# post data method on AWS S3
 def post_data():
     global clients_df
     client_record = dict(
