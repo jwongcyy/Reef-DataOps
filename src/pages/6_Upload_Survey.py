@@ -69,14 +69,14 @@ st.divider()
 # modify=st.button("Modify Data")
 
 
-if upload:
-    st.write("Uploading")
-
-if modify:
-    site_id=st.selectbox(label="Modify Site ID", options=site_ids)
-    survey_id=st.selectbox(label="Modify Survey ID", options=sids)
-
-    vals=dict(site_id=site_id,survey_id=survey_id)
+# if upload:
+#     st.write("Uploading")
+#
+# if modify:
+#     site_id=st.selectbox(label="Modify Site ID", options=site_ids)
+#     survey_id=st.selectbox(label="Modify Survey ID", options=sids)
+#
+#     vals=dict(site_id=site_id,survey_id=survey_id)
 
 
 
