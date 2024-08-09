@@ -5,6 +5,8 @@ import os
 import sys
 from S3 import Storage
 import os.path as path
+from helper import *
+import time
 
 # Set root path for code modules
 current = os.path.dirname(os.path.realpath(__file__))
@@ -15,11 +17,12 @@ sys.path.append(parent)
 root = path.abspath(path.join(__file__, "../../.."))
 countries = pd.read_csv(f'{root}/data/reefops/countries.csv', encoding="ISO-8859-1")
 
+client_storage_path = 'database/reef_ops/clients.csv'
 s3_storage = Storage(name='archireef-hive')
 # Load the data from aws s3 as binary format
-loaded_sites_s3 = s3_storage.read_file(file_path='database/reef_ops/clients.csv')
+loaded_clients_s3 = s3_storage.read_file(file_path=client_storage_path)
 # Read the binary data
-client_obj = io.BytesIO(loaded_sites_s3)
+client_obj = io.BytesIO(loaded_clients_s3)
 clients_df = pd.read_csv(client_obj)
 
 st.set_page_config(page_title="Create Client", page_icon="🌍")
@@ -27,44 +30,7 @@ st.set_page_config(page_title="Create Client", page_icon="🌍")
 st.markdown("# Create New Client")
 st.divider()
 
-# post data method on AWS S3
-def post_data():
-    global clients_df
-    client_record = dict(
-        name=name,
-        client_code=client_code,
-        address=address,
-        contact_name=contact_name,
-        primary_email=contact_email,
-        primary_mobile_no=contact_no,
-        contact_department=contact_department,
-        onboarded=onboarded
-    )
-    record_added = False
-    clients_num = clients_df.shape[0]
-    # update the new client record id
-    client_id = clients_df.iloc[-1]['client_id'] + 1
-    clients_df = clients_df._append(client_record, ignore_index=True)
-    clients_df.loc[clients_df.index[-1], 'client_id'] = client_id
-    clients_df['client_id'] = clients_df['client_id'].astype('int')
-    if clients_df.shape[0] > clients_num:
-        record_added = True
-    if record_added:
-        csv_buffer = io.StringIO()
-        clients_df.to_csv(csv_buffer, index=False)
-        post_result = s3_storage.write_file(binary_data=csv_buffer.getvalue(), output_path='database/reef_ops/clients.csv')
-        if post_result['ResponseMetadata']['HTTPStatusCode'] == 200:
-            output.success("New Client Added Successfully!")
-            output.info("Number of Clients: " + str(clients_df.shape[0]))
-            output.write(client_record)
-        else:
-            output.error("Sorry Something Went Wrong, Please Try Again!")
-    else:
-        output.error("Sorry Something Went Wrong, Please Try Again!")
-
-
 col1, col2 = st.columns(2)
-
 # Column 1 Content
 name = col1.text_input(label="Company Name")
 client_code = col1.text_input(label="Client Code")
@@ -79,6 +45,29 @@ contact_department = col2.text_input(label="Contact Department")
 contact_email = col2.text_input(label="Contact Email")
 onboarded = col2.selectbox(label="Client Onboarded?", options=["Yes", "No"])
 
+client_record = dict(
+    name=name,
+    client_code=client_code,
+    address=address,
+    contact_name=contact_name,
+    primary_email=contact_email,
+    primary_mobile_no=contact_no,
+    contact_department=contact_department,
+    onboarded=onboarded
+)
+
 submit = st.container(border=True)
-submit.button("SUBMIT", on_click=post_data)
+submit_btn = submit.button("SUBMIT")
 output = st.container(border=True)
+
+if submit_btn:
+    # starttime = time.time()
+    post_status = post_record(new_record=client_record, source_df=clients_df, store_obj=s3_storage,
+                              output_path=client_storage_path, df_id='client_id')
+    # print(time.time() - starttime)
+    if post_status:
+        output.success("New Client Added Successfully!")
+        output.info("Number of Clients: " + str(clients_df.shape[0]))
+        output.write(client_record)
+    else:
+        output.error("Sorry Something Went Wrong, Please Try Again!")
