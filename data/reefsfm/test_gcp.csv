@@ -1,0 +1,2 @@
+,name,gcp_data
+0,test,"[{'id': 'GCP01', 'reference': False, 'bearing': 50, 'depth': 10.5}, {'id': 'GCP02', 'reference': True, 'bearing': 0, 'depth': 10.5}, {'id': 'GCP02', 'reference': True, 'bearing': 0, 'depth': 10.5}]"
